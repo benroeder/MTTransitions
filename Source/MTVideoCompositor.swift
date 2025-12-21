@@ -7,15 +7,21 @@
 
 import AVFoundation
 
-class MTVideoCompositor: NSObject, AVVideoCompositing {
-    
-    /// Returns the pixel buffer attributes required by the video compositor for new buffers created for processing.
-    var requiredPixelBufferAttributesForRenderContext: [String : Any] =
-    [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
-    
-    /// The pixel buffer attributes of pixel buffers that will be vended by the adaptor’s CVPixelBufferPool.
-    var sourcePixelBufferAttributes: [String : Any]? =
-    [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
+final class MTVideoCompositor: NSObject, AVVideoCompositing {
+
+    // MARK: - AVVideoCompositing Protocol Requirements
+
+    var requiredPixelBufferAttributesForRenderContext: [String : Any] {
+        return _pixelBufferAttributes
+    }
+
+    var sourcePixelBufferAttributes: [String : Any]? {
+        return _pixelBufferAttributes
+    }
+
+    private let _pixelBufferAttributes: [String : Any] = [
+        kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)
+    ]
     
     /// Set if all pending requests have been cancelled.
     var shouldCancelAllRequests = false

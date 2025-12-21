@@ -5,6 +5,7 @@
 //  Created by endanke on 2020/3/24.
 //
 
+#if os(iOS) || os(tvOS)
 import Foundation
 import MetalPetal
 
@@ -88,3 +89,4 @@ extension MTTransition {
         view.layer.sublayers?.removeAll(where: { $0.name == transitionLayerName })
     }
 }
+#endif

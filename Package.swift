@@ -1,10 +1,10 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.4
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 import PackageDescription
 
 let package = Package(
     name: "MTTransitions",
-    platforms: [.iOS(.v11)],
+    platforms: [.iOS(.v11), .macOS(.v10_13), .tvOS(.v13)],
     products: [.library(name: "MTTransitions",
                         targets: ["MTTransitions"]),
     ],
@@ -17,7 +17,10 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(name: "MTTransitions",
                 dependencies: ["MetalPetal"],
-                path: "Source")
+                path: "Source"),
+        .executableTarget(name: "macOSTest",
+                          dependencies: ["MTTransitions"],
+                          path: "macOSTest")
     ],
     swiftLanguageVersions: [.v5]
 )

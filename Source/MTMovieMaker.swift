@@ -8,6 +8,11 @@
 import Foundation
 import AVFoundation
 import MetalPetal
+#if os(iOS) || os(tvOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 public enum MTMovieMakerError: Error {
     case imagesMustMoreThanTwo
@@ -59,6 +64,7 @@ public class MTMovieMaker: NSObject {
                         completion: completion)
     }
     
+    #if os(iOS) || os(tvOS)
     /// Create video from images.
     /// - Parameters:
     ///   - images: The input images. Should be same width and height.
@@ -74,8 +80,8 @@ public class MTMovieMaker: NSObject {
                             transitionDuration: TimeInterval = 0.8,
                             audioURL: URL? = nil,
                             completion: @escaping MTMovieMakerCompletion) throws {
-        
-        
+
+
         let inputImages = images.map {
             return MTIImage(cgImage: $0.cgImage!, options: [.SRGB: false]).oriented(.downMirrored)
         }
@@ -86,6 +92,35 @@ public class MTMovieMaker: NSObject {
                         audioURL: audioURL,
                         completion: completion)
     }
+    #elseif os(macOS)
+    /// Create video from images.
+    /// - Parameters:
+    ///   - images: The input images. Should be same width and height.
+    ///   - effects: The transition applied to switch images. The number of effects must equals to images.count - 1.
+    ///   - frameDuration: The duration each image display.
+    ///   - transitionDuration: The duration of transition.
+    ///   - audioURL: The local url of audio to be mixed to the video.
+    ///   - completion: completion callback.
+    /// - Throws: Throws an exception.
+    public func createVideo(with images: [NSImage],
+                            effects: [MTTransition.Effect],
+                            frameDuration: TimeInterval = 1,
+                            transitionDuration: TimeInterval = 0.8,
+                            audioURL: URL? = nil,
+                            completion: @escaping MTMovieMakerCompletion) throws {
+
+        let inputImages = images.compactMap { image -> MTIImage? in
+            guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+            return MTIImage(cgImage: cgImage, options: [.SRGB: false]).oriented(.downMirrored)
+        }
+        try createVideo(with: inputImages,
+                        effects: effects,
+                        frameDuration: frameDuration,
+                        transitionDuration: transitionDuration,
+                        audioURL: audioURL,
+                        completion: completion)
+    }
+    #endif
     
     /// Create video from images.
     /// - Parameters:
@@ -116,7 +151,7 @@ public class MTMovieMaker: NSObject {
         writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
         let outputSize = images.first!.size
         let videoSettings: [String: Any] = [
-            AVVideoCodecKey: AVVideoCodecH264,
+            AVVideoCodecKey: AVVideoCodecType.h264,
             AVVideoWidthKey: outputSize.width,
             AVVideoHeightKey: outputSize.height
         ]

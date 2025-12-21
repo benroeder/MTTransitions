@@ -5,6 +5,7 @@
 //  Created by alexiscn on 2020/3/22.
 //
 
+#if os(iOS) || os(tvOS)
 import Foundation
 import MetalPetal
 
@@ -73,3 +74,4 @@ public final class MTViewControllerTransition: NSObject, UIViewControllerAnimate
         self.transition.duration = duration
     }
 }
+#endif

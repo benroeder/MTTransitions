@@ -8,6 +8,11 @@
 import Foundation
 import MetalPetal
 import VideoToolbox
+#if os(iOS) || os(tvOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 public class MTVideoTransitionRenderer: NSObject {
  
@@ -39,6 +44,7 @@ public class MTVideoTransitionRenderer: NSObject {
     }
 }
 
+#if os(iOS) || os(tvOS)
 extension UIImage {
     public convenience init?(pixelBuffer: CVPixelBuffer) {
         var cgImage: CGImage?
@@ -49,3 +55,17 @@ extension UIImage {
         self.init(cgImage: image)
     }
 }
+#elseif os(macOS)
+extension NSImage {
+    public convenience init?(pixelBuffer: CVPixelBuffer) {
+        var cgImage: CGImage?
+        VTCreateCGImageFromCVPixelBuffer(pixelBuffer, options: nil, imageOut: &cgImage)
+        guard let image = cgImage else {
+            return nil
+        }
+        let size = NSSize(width: CGFloat(CVPixelBufferGetWidth(pixelBuffer)),
+                          height: CGFloat(CVPixelBufferGetHeight(pixelBuffer)))
+        self.init(cgImage: image, size: size)
+    }
+}
+#endif

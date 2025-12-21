@@ -7,7 +7,9 @@
 
 using namespace metalpetal;
 
+#ifndef PI
 #define PI 3.141592653589793
+#endif
 #define STAR_ANGLE 1.2566370614359172
 
 float2 rotate(float2 v, float theta) {
