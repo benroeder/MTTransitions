@@ -17,7 +17,8 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(name: "MTTransitions",
                 dependencies: ["MetalPetal"],
-                path: "Source"),
+                path: "Source",
+                resources: [.process("Assets.bundle")]),
         .executableTarget(name: "macOSTest",
                           dependencies: ["MTTransitions"],
                           path: "macOSTest")
