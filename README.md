@@ -8,19 +8,21 @@ Transitions ports from [GL-Transitions](https://gl-transitions.com/) to Metal.
 ## Features
 
 - [x] Up to 76 transitions
-- [x] Image Transitions
-- [x] UIView Transitions
-- [x] UIViewController Push Transtions
-- [x] UIViewController Present Transitions
-- [x] Video Merge Transitions
-- [x] Create video from images with transitions 
-- [x] Create video from images with transitions and background music
+- [x] Image Transitions (iOS, macOS, tvOS)
+- [x] UIView Transitions (iOS, tvOS)
+- [x] UIViewController Push Transitions (iOS, tvOS)
+- [x] UIViewController Present Transitions (iOS, tvOS)
+- [x] Video Merge Transitions (iOS, macOS, tvOS)
+- [x] Create video from images with transitions (iOS, macOS, tvOS)
+- [x] Create video from images with transitions and background music (iOS, macOS, tvOS)
 
 ## Requirements
 
-* iOS 10.0 +
-* Xcode 11.0 +
-* Swift 5.0 +
+* iOS 10.0+
+* macOS 10.13+
+* tvOS 14.0+
+* Xcode 11.0+
+* Swift 5.0+
 
 ## Transitions
 
