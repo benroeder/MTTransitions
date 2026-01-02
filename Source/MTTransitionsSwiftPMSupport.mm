@@ -3876,6 +3876,12 @@ fragment float4 StereoViewerFragment(VertexOut vertexIn [[ stage_in ]],
     }
 }
 
+// Undefine macros from StereoViewer to avoid conflicts with other shaders
+#undef black
+#undef c00
+#undef c01
+#undef c11
+#undef c10
 
 // Author: gre
 // License: MIT
