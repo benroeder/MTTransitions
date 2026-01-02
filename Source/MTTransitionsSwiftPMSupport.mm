@@ -34,51 +34,218 @@ static const char *MTTransitionsBuiltinLibrarySource = R"mttrawstring(
 #define M_PI   3.14159265358979323846
 
 #include <metal_stdlib>
-#include "MTIShaderLib.h"
+#include <simd/simd.h>
 
 using namespace metal;
 
+// ============================================================================
+// MTIShaderLib.h content inlined for runtime compilation
+// ============================================================================
+
+struct MTIVertex {
+    float4 position;
+    float2 textureCoordinate;
+};
+
 namespace metalpetal {
-    
+
+    typedef ::MTIVertex VertexIn;
+
+    typedef struct {
+        float4 position [[ position ]];
+        float2 textureCoordinate;
+    } VertexOut;
+
+    // GLSL mod func for metal
+    template <typename T, typename _E = typename enable_if<is_floating_point<typename make_scalar<T>::type>::value>::type>
+    METAL_FUNC T mod(T x, T y) {
+        return x - y * floor(x/y);
+    }
+
+    template <typename T, typename _E = typename enable_if<is_floating_point<T>::value>::type>
+    METAL_FUNC T sRGBToLinear(T c) {
+        return (c <= 0.04045f) ? c / 12.92f : powr((c + 0.055f) / 1.055f, 2.4f);
+    }
+
+    METAL_FUNC float3 sRGBToLinear(float3 c) {
+        return float3(sRGBToLinear(c.r), sRGBToLinear(c.g), sRGBToLinear(c.b));
+    }
+
+    template <typename T, typename _E = typename enable_if<is_floating_point<T>::value>::type>
+    METAL_FUNC T linearToSRGB(T c) {
+        return (c < 0.0031308f) ? (12.92f * c) : (1.055f * powr(c, 1.f/2.4f) - 0.055f);
+    }
+
+    METAL_FUNC float3 linearToSRGB(float3 c) {
+        return float3(linearToSRGB(c.r), linearToSRGB(c.g), linearToSRGB(c.b));
+    }
+
+    METAL_FUNC float4 unpremultiply(float4 s) {
+        return float4(s.rgb/max(s.a,0.00001), s.a);
+    }
+
+    METAL_FUNC float4 premultiply(float4 s) {
+        return float4(s.rgb * s.a, s.a);
+    }
+
+    template <typename T, typename _E = typename enable_if<is_floating_point<T>::value>::type>
+    METAL_FUNC T hue2rgb(T p, T q, T t){
+        if(t < 0.0) { t += 1.0; }
+        if(t > 1.0) { t -= 1.0; }
+        if(t < 1.0/6.0) { return p + (q - p) * 6.0 * t; }
+        if(t < 1.0/2.0) { return q; }
+        if(t < 2.0/3.0) { return p + (q - p) * (2.0/3.0 - t) * 6.0; }
+        return p;
+    }
+
+    METAL_FUNC float3 rgb2hsl(float3 inputColor) {
+        float3 color = saturate(inputColor);
+        float MAX = max(color.r, max(color.g, color.b));
+        float MIN = min(color.r, min(color.g, color.b));
+        MAX = max(MIN + 1e-6, MAX);
+        float l = (MIN + MAX) / 2.0;
+        float s = (l < 0.5 ? (MAX - MIN) / (MIN + MAX) : (MAX - MIN) / (2.0 - MAX - MIN));
+        float h = (MAX == color.r ? (color.g - color.b) / (MAX - MIN) : (MAX == color.g ? 2.0 + (color.b - color.r) / (MAX - MIN) : 4.0 + (color.r - color.g) / (MAX - MIN)));
+        h /= 6.0;
+        h = (h < 0.0 ? 1.0 + h : h);
+        return float3(h, s, l);
+    }
+
+    METAL_FUNC float3 hsl2rgb(float3 inputColor) {
+        float3 color = saturate(inputColor);
+        float h = color.r;
+        float s = color.g;
+        float l = color.b;
+        float r,g,b;
+        if(s <= 0.0){
+            r = g = b = l;
+        }else{
+            float q = l < 0.5 ? (l * (1.0 + s)) : (l + s - l * s);
+            float p = 2.0 * l - q;
+            r = hue2rgb(p, q, h + 1.0/3.0);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1.0/3.0);
+        }
+        return float3(r,g,b);
+    }
+
+    METAL_FUNC float lum(float4 C) {
+        return 0.299 * C.r + 0.587 * C.g + 0.114 * C.b;
+    }
+
+    METAL_FUNC float4 normalBlend(float4 Cb, float4 Cs) {
+        float4 dst = premultiply(Cb);
+        float4 src = premultiply(Cs);
+        return unpremultiply(src + dst * (1.0 - src.a));
+    }
+
+    METAL_FUNC float4 blendBaseAlpha(float4 Cb, float4 Cs, float4 B) {
+        float4 Cr = float4((1 - Cb.a) * Cs.rgb + Cb.a * saturate(B.rgb), Cs.a);
+        return normalBlend(Cb, Cr);
+    }
+
+    METAL_FUNC float4 multiplyBlend(float4 Cb, float4 Cs) {
+        float4 B = saturate(float4(Cb.rgb * Cs.rgb, Cs.a));
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float overlayBlendSingleChannel(float b, float s) {
+        return b < 0.5f ? (2 * s * b) : (1 - 2 * (1 - b) * (1 - s));
+    }
+
+    METAL_FUNC float4 overlayBlend(float4 Cb, float4 Cs) {
+        float4 B = float4(overlayBlendSingleChannel(Cb.r, Cs.r), overlayBlendSingleChannel(Cb.g, Cs.g), overlayBlendSingleChannel(Cb.b, Cs.b), Cs.a);
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float4 screenBlend(float4 Cb, float4 Cs) {
+        float4 White = float4(1.0);
+        float4 B = White - ((White - Cs) * (White - Cb));
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float4 darkenBlend(float4 Cb, float4 Cs) {
+        float4 B = float4(min(Cs.r, Cb.r), min(Cs.g, Cb.g), min(Cs.b, Cb.b), Cs.a);
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float4 lightenBlend(float4 Cb, float4 Cs) {
+        float4 B = float4(max(Cs.r, Cb.r), max(Cs.g, Cb.g), max(Cs.b, Cb.b), Cs.a);
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float colorBurnBlendSingleChannel(float b, float f) {
+        if (b == 1) { return 1; }
+        else if (f == 0) { return 0; }
+        else { return 1.0 - min(1.0, (1 - b) / f); }
+    }
+
+    METAL_FUNC float4 colorBurnBlend(float4 Cb, float4 Cs) {
+        float4 B = float4(colorBurnBlendSingleChannel(Cb.r, Cs.r), colorBurnBlendSingleChannel(Cb.g, Cs.g), colorBurnBlendSingleChannel(Cb.b, Cs.b), Cs.a);
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float colorDodgeBlendSingleChannel(float b, float f) {
+        if (b == 0) { return 0; }
+        else if (f == 1) { return 1; }
+        else { return min(1.0, b / (1 - f)); }
+    }
+
+    METAL_FUNC float4 colorDodgeBlend(float4 Cb, float4 Cs) {
+        float4 B = float4(colorDodgeBlendSingleChannel(Cb.r, Cs.r), colorDodgeBlendSingleChannel(Cb.g, Cs.g), colorDodgeBlendSingleChannel(Cb.b, Cs.b), Cs.a);
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float4 differenceBlend(float4 Cb, float4 Cs) {
+        float4 B = float4(abs(Cb.rgb - Cs.rgb), Cs.a);
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float4 exclusionBlend(float4 Cb, float4 Cs) {
+        float4 B = float4(Cb.rgb + Cs.rgb - 2 * Cb.rgb * Cs.rgb, Cs.a);
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float4 addBlend(float4 Cb, float4 Cs) {
+        float4 B = min(Cb + Cs, 1.0);
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    METAL_FUNC float4 subtractBlend(float4 Cb, float4 Cs) {
+        float4 B = Cb - Cs;
+        return blendBaseAlpha(Cb, Cs, B);
+    }
+
+    // ============================================================================
+    // MTTransitions-specific additions to metalpetal namespace
+    // ============================================================================
+
     enum class ResizeMode { cover, contains, stretch };
-    
+
     METAL_FUNC float2 cover(float2 uv, float ratio, float r) {
-        
         return 0.5 + (uv - 0.5) * float2(min(ratio/r, 1.0), min(r/ratio, 1.0));
     }
-    
-//    METAL_FUNC float2 resize(ResizeMode mode, float ratio, float2 uv, float4 texture) {
-//        if (mode == ResizeMode::cover) {
-//
-//        } else if (mode == ResizeMode::contains) {
-//
-//        } else {
-//            return uv;
-//        }
-//        return float2(1.0);
-//    }
-    
+
     METAL_FUNC float4 getFromColor(float2 uv, texture2d<float, access::sample> texture, float ratio, float _fromR) {
         constexpr sampler s(coord::normalized, address::clamp_to_edge, filter::linear);
         float2 _uv = cover(uv, ratio, _fromR);
         return texture.sample(s, _uv);
     }
-    
+
     METAL_FUNC float4 getToColor(float2 uv, texture2d<float, access::sample> texture, float ratio, float _toR) {
         constexpr sampler s(coord::normalized, address::clamp_to_edge, filter::linear);
         float2 _uv = cover(uv, ratio, _toR);
         return texture.sample(s, _uv);
     }
-    
-    //Random function borrowed from everywhere
+
     METAL_FUNC float rand(float2 co){
       return fract(sin(dot(co.xy ,float2(12.9898,78.233))) * 43758.5453);
     }
 }
 
-#endif /* MTTransitions_h */
+#endif /* __METAL_MACOS__ || __METAL_IOS__ */
 
-#endif
+#endif /* MTTransitions_h */
 
 
 // Author: Fernando Kuteken

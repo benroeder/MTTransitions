@@ -1,0 +1,3 @@
+${PODS_ROOT}/Target Support Files/Pods-MTTransitionsTVDemo/Pods-MTTransitionsTVDemo-frameworks.sh
+${BUILT_PRODUCTS_DIR}/MTTransitions-tvOS/MTTransitions.framework
+${BUILT_PRODUCTS_DIR}/MetalPetal-tvOS/MetalPetal.framework

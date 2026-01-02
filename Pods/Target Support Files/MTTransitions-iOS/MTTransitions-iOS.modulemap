@@ -1,5 +1,5 @@
 framework module MTTransitions {
-  umbrella header "MTTransitions-umbrella.h"
+  umbrella header "MTTransitions-iOS-umbrella.h"
 
   export *
   module * { export * }

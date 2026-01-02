@@ -1,0 +1,8 @@
+platform :osx, '13.0'
+
+target 'MTTransitionsMacDemo' do
+  use_frameworks!
+
+  pod 'MTTransitions', :path => '.'
+  pod 'MetalPetal', :git => 'https://github.com/nickkoval/MetalPetal', :tag => '1.28.1', :subspecs => ['Static']
+end

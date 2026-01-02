@@ -14,14 +14,19 @@
   "authors": {
     "alexiscn": "shuifengxu@gmail.com"
   },
-  "platforms": {
-    "ios": "11.0"
-  },
   "swift_versions": "5.0",
   "source_files": "Source/**/*.{swift,metal,h}",
   "resources": "Source/**/Assets.bundle",
+  "platforms": {
+    "ios": "11.0",
+    "osx": "10.13",
+    "tvos": "13.0"
+  },
   "xcconfig": {
-    "MTL_HEADER_SEARCH_PATHS": "${PODS_CONFIGURATION_BUILD_DIR}/MetalPetal/MetalPetal.framework/Headers"
+    "MTL_HEADER_SEARCH_PATHS": "${PODS_CONFIGURATION_BUILD_DIR}/MetalPetal/MetalPetal.framework/Headers ${PODS_CONFIGURATION_BUILD_DIR}/MetalPetal-macOS/MetalPetal.framework/Headers ${PODS_CONFIGURATION_BUILD_DIR}/MetalPetal-iOS/MetalPetal.framework/Headers ${PODS_CONFIGURATION_BUILD_DIR}/MetalPetal-tvOS/MetalPetal.framework/Headers"
+  },
+  "pod_target_xcconfig": {
+    "OTHER_SWIFT_FLAGS": "$(inherited) -Xfrontend -suppress-warnings"
   },
   "weak_frameworks": "MetalKit",
   "dependencies": {

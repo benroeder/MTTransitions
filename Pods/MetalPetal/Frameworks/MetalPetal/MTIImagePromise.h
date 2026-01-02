@@ -113,6 +113,8 @@ __attribute__((objc_subclassing_restricted))
 __attribute__((objc_subclassing_restricted))
 @interface MTITexturePromise : NSObject <MTIImagePromise>
 
+@property (nonatomic, strong, readonly) id<MTLTexture> texture;
+
 - (instancetype)init NS_UNAVAILABLE;
 
 + (instancetype)new NS_UNAVAILABLE;
@@ -157,7 +159,6 @@ __attribute__((objc_subclassing_restricted))
 @end
 
 __attribute__((objc_subclassing_restricted))
-NS_AVAILABLE(10_12, 10_0)
 @interface MTINamedImagePromise: NSObject <MTIImagePromise>
 
 @property (nonatomic, copy, readonly) NSString *name;
@@ -178,7 +179,6 @@ NS_AVAILABLE(10_12, 10_0)
 @end
 
 __attribute__((objc_subclassing_restricted))
-NS_AVAILABLE(10_12, 10_0)
 @interface MTIMDLTexturePromise: NSObject <MTIImagePromise>
 
 - (instancetype)init NS_UNAVAILABLE;
