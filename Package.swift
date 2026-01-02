@@ -13,11 +13,23 @@ let package = Package(
          .package(url: "https://github.com/MetalPetal/MetalPetal", from: "1.24.0"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
-        // Targets can depend on other targets in this package, and on products in packages which this package depends on.
-        .target(name: "MTTransitions",
-                dependencies: ["MetalPetal"],
+        // ObjC target that embeds Metal shader sources for SPM compatibility
+        .target(name: "MTTransitionsSPMSupport",
+                dependencies: [.product(name: "MetalPetal", package: "MetalPetal")],
                 path: "Source",
+                sources: ["MTTransitionsSwiftPMSupport.mm"],
+                publicHeadersPath: ".",
+                cSettings: [
+                    .headerSearchPath("."),
+                    .define("SWIFT_PACKAGE", to: "1"),
+                    .unsafeFlags(["-fmodules", "-fcxx-modules"])
+                ]),
+        // Main Swift target
+        .target(name: "MTTransitions",
+                dependencies: ["MetalPetal", "MTTransitionsSPMSupport"],
+                path: "Source",
+                exclude: ["MTTransitionsSwiftPMSupport.mm", "MTTransitionsSwiftPMSupport.h"],
+                sources: nil,  // Include all Swift files
                 resources: [.process("Assets.bundle")]),
         .executableTarget(name: "macOSTest",
                           dependencies: ["MTTransitions"],

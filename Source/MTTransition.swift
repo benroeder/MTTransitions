@@ -73,7 +73,7 @@ public class MTTransition: NSObject, MTIUnaryFilter {
 
     var kernel: MTIRenderPipelineKernel {
         let vertexDescriptor = MTIFunctionDescriptor(name: MTIFilterPassthroughVertexFunctionName)
-        let fragmentDescriptor = MTIFunctionDescriptor(name: fragmentName, libraryURL: MTIDefaultLibraryURLForBundle(Bundle(for: MTTransition.self)))
+        let fragmentDescriptor = MTIFunctionDescriptor(name: fragmentName, libraryURL: MTTransition.swiftPMLibraryURL)
         let kernel = MTIRenderPipelineKernel(vertexFunctionDescriptor: vertexDescriptor, fragmentFunctionDescriptor: fragmentDescriptor)
         return kernel
     }
